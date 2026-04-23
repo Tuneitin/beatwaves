@@ -1,22 +1,66 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from app.models.transaction import TransactionType, TransactionStatus
 from app.models.royalty import RoyaltyStatus
 
+VALID_NETWORKS = {"mtn", "vodafone", "airteltigo"}
+
 
 class MoMoPayRequest(BaseModel):
-    amount_ghs: float
-    momo_number: str
-    momo_network: str          # mtn, vodafone, airteltigo
-    description: Optional[str] = None
+    amount_ghs: float = Field(..., gt=0, description="Amount must be greater than 0")
+    momo_number: str = Field(..., min_length=10, max_length=20, description="Valid MoMo phone number")
+    momo_network: str = Field(..., description="mtn, vodafone, or airteltigo")
+    description: Optional[str] = Field(None, max_length=255)
     transaction_type: TransactionType = TransactionType.subscription
+
+    @field_validator("amount_ghs")
+    @classmethod
+    def validate_amount(cls, v):
+        if v > 10000:
+            raise ValueError("Amount cannot exceed 10,000 GHS")
+        return v
+
+    @field_validator("momo_network")
+    @classmethod
+    def validate_network(cls, v):
+        if v.lower() not in VALID_NETWORKS:
+            raise ValueError(f"Network must be one of: {', '.join(VALID_NETWORKS)}")
+        return v.lower()
+
+    @field_validator("momo_number")
+    @classmethod
+    def validate_momo_number(cls, v):
+        if not v.replace("+", "").replace(" ", "").isdigit():
+            raise ValueError("MoMo number must contain only digits, + and spaces")
+        return v
 
 
 class WithdrawRequest(BaseModel):
-    amount_ghs: float
-    momo_number: str
-    momo_network: str
+    amount_ghs: float = Field(..., gt=0, description="Amount must be greater than 0")
+    momo_number: str = Field(..., min_length=10, max_length=20)
+    momo_network: str = Field(..., description="mtn, vodafone, or airteltigo")
+
+    @field_validator("amount_ghs")
+    @classmethod
+    def validate_amount(cls, v):
+        if v > 10000:
+            raise ValueError("Amount cannot exceed 10,000 GHS")
+        return v
+
+    @field_validator("momo_network")
+    @classmethod
+    def validate_network(cls, v):
+        if v.lower() not in VALID_NETWORKS:
+            raise ValueError(f"Network must be one of: {', '.join(VALID_NETWORKS)}")
+        return v.lower()
+
+    @field_validator("momo_number")
+    @classmethod
+    def validate_momo_number(cls, v):
+        if not v.replace("+", "").replace(" ", "").isdigit():
+            raise ValueError("MoMo number must contain only digits, + and spaces")
+        return v
 
 
 class TransactionOut(BaseModel):

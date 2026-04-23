@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, JSON, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -38,3 +38,10 @@ class Track(Base):
     artist = relationship("User", back_populates="tracks")
     royalties = relationship("Royalty", back_populates="track")
     sales = relationship("Sale", back_populates="track")
+
+    __table_args__ = (
+        Index("idx_track_artist_id", "artist_id"),
+        Index("idx_track_status", "status"),
+        Index("idx_track_created_at", "created_at"),
+    )
+

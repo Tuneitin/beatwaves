@@ -1,26 +1,58 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime
+import logging
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.track import Track, TrackStatus, GenreType
 from app.schemas.track import TrackOut, TrackUpdate
+from app.core.pagination import PaginatedResponse
 from app.services.file_upload import save_track_file, save_artwork_file
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/tracks", tags=["Tracks"])
 
 
-@router.get("/", response_model=List[TrackOut])
+@router.get("/", response_model=PaginatedResponse[TrackOut])
 def list_my_tracks(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(Track).filter(Track.artist_id == current_user.id).all()
+    total = db.query(func.count(Track.id)).filter(Track.artist_id == current_user.id).scalar()
+    offset = (page - 1) * page_size
+    tracks = db.query(Track).filter(Track.artist_id == current_user.id).offset(offset).limit(page_size).all()
+    logger.info(f"User {current_user.id} retrieved {len(tracks)} tracks (page {page})")
+    return PaginatedResponse.create(tracks, total, page, page_size)
 
 
-@router.post("/", response_model=TrackOut, status_code=201)
+@router.get("/search")
+def search_tracks(
+    q: str = Query(..., min_length=1, max_length=100, description="Search query"),
+    genre: Optional[str] = Query(None, description="Filter by genre"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    """Search for published tracks by title or filter by genre."""
+    query = db.query(Track).filter(Track.status == "published")
+
+    if q:
+        query = query.filter(Track.title.ilike(f"%{q}%"))
+
+    if genre:
+        query = query.filter(Track.genre == genre)
+
+    total = query.count()
+    offset = (page - 1) * page_size
+    tracks = query.offset(offset).limit(page_size).all()
+
+    logger.info(f"Search for '{q}' returned {len(tracks)} tracks")
+    return PaginatedResponse.create(tracks, total, page, page_size)
 async def upload_track(
     title: str = Form(...),
     genre: GenreType = Form(GenreType.afrobeats),
