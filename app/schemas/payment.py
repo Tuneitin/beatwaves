@@ -79,3 +79,14 @@ class PurchaseRequest(BaseModel):
     buyer_name: Optional[str] = None
     momo_number: str
     amount_paid_ghs: float
+
+
+class HubtelCallbackPayload(BaseModel):
+    ClientReference: Optional[str] = None
+    Status: Optional[str] = None
+    Data: Optional[dict] = None
+
+
+class CallbackSimulationRequest(BaseModel):
+    external_reference: str
+    status: str

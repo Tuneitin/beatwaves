@@ -22,7 +22,7 @@ Music distribution backend for African artists — built with FastAPI + PostgreS
 ### 1. Clone and install
 
 ```bash
-cd beatwave
+cd beatwaves
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
@@ -118,7 +118,7 @@ Authorization: Bearer <token>
 ## Project Structure
 
 ```
-beatwave/
+.
 ├── app/
 │   ├── core/
 │   │   ├── config.py       # Settings (env vars)

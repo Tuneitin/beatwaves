@@ -22,5 +22,5 @@ def get_db():
 
 
 def create_tables():
-    from app.models import user, track, release, royalty, transaction, sale  # noqa
+    from app.models import user, track, royalty, transaction, sale  # noqa
     Base.metadata.create_all(bind=engine)

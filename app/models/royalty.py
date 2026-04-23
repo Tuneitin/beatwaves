@@ -26,3 +26,4 @@ class Royalty(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     track = relationship("Track", back_populates="royalties")
+    artist = relationship("User", back_populates="royalties")
